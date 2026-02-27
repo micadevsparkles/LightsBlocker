@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>LightsBlocker - Interface Web</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        :root {
+            --bg: #1a1a1a;
+            --container: #000000;
+            --text: #ffffff;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --border: #333;
+        }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .hidden { display: none; }
+        nav { background: var(--container); border-bottom: 2px solid var(--green); padding: 15px; display: flex; justify-content: space-around; position: sticky; top: 0; z-index: 100; }
+        nav a { color: var(--text); text-decoration: none; font-weight: bold; cursor: pointer; }
+        nav a:hover { color: var(--yellow); }
+        
+        .container { max-width: 600px; margin: 20px auto; padding: 15px; background: var(--container); border-radius: 8px; border: 1px solid var(--border); }
+        
+        /* Auth */
+        .auth-box input { width: 100%; padding: 10px; margin: 10px 0; background: #222; border: 1px solid var(--border); color: white; border-radius: 4px; box-sizing: border-box; }
+        button { background: var(--green); color: black; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        button.secondary { background: var(--yellow); }
+        button.danger { background: var(--red); color: white; }
+
+        /* Store */
+        .store-page { text-align: center; }
+        .screenshots { display: flex; gap: 10px; overflow-x: auto; padding: 15px 0; }
+        .screenshots img { height: 350px; border: 2px solid var(--border); border-radius: 10px; }
+
+        /* Community */
+        .post-card { border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .post-card:hover { border-color: var(--green); }
+        .post-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
+        .reaction-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .react-btn { background: #222; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; }
+        
+        /* New Post Editor */
+        .toolbar { display: flex; gap: 5px; margin-bottom: 5px; }
+        .toolbar button { width: auto; padding: 5px 10px; background: #333; color: white; }
+        #editor { min-height: 150px; border: 1px solid var(--border); padding: 10px; background: #111; color: white; overflow-y: auto; }
+        
+        /* Modal */
+        .modal { position: fixed; top:0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background: var(--container); padding: 20px; border-radius: 8px; border: 1px solid var(--green); max-width: 90%; }
+
+        .emoji-picker { position: absolute; bottom: 50px; right: 0; background: #222; border: 1px solid var(--border); display: grid; grid-template-columns: repeat(5, 1fr); padding: 5px; z-index: 10; }
+        .emoji-item { cursor: pointer; padding: 5px; }
+    </style>
+</head>
+<body>
+
+<nav id="navbar" class="hidden">
+    <a onclick="showPage('download')">Download</a>
+    <a onclick="showPage('community')">Comunidade</a>
+    <a onclick="showPage('support')">Suporte</a>
+    <a onclick="logout()">Sair</a>
+</nav>
+
+<div id="auth-page" class="container">
+    <div id="login-view">
+        <h2 style="color: var(--green)">LightsBlocker Login</h2>
+        <input type="text" id="l-user" placeholder="Usuário">
+        <input type="password" id="l-pass" placeholder="Senha">
+        <button onclick="doLogin()">Entrar</button>
+        <p style="text-align: center">Não tem conta? <a href="#" onclick="toggleAuth(true)" style="color: var(--yellow)">Criar conta</a></p>
+    </div>
+    <div id="signup-view" class="hidden">
+        <h2 style="color: var(--yellow)">Criar Conta</h2>
+        <input type="text" id="s-user" placeholder="Usuário">
+        <input type="email" id="s-email" placeholder="E-mail">
+        <input type="tel" id="s-tel" placeholder="Telefone">
+        <input type="password" id="s-pass" placeholder="Senha">
+        <input type="password" id="s-pass2" placeholder="Confirmar Senha">
+        <button class="secondary" onclick="doSignup()">Cadastrar</button>
+        <p style="text-align: center"><a href="#" onclick="toggleAuth(false)" style="color: var(--green)">Voltar ao Login</a></p>
+    </div>
+</div>
+
+<div id="main-content" class="hidden">
+    <div id="page-download" class="page store-page container">
+        <h1 style="color: var(--green)">LightsBlocker App</h1>
+        <p>Proteja sua visão. Bloqueie as luzes desnecessárias.</p>
+        <div class="screenshots">
+            <img src="screenshot1.png" alt="Screen 1">
+            <img src="screenshot2.png" alt="Screen 2">
+            <img src="screenshot3.png" alt="Screen 3">
+        </div>
+        <button style="font-size: 1.2rem;" onclick="showTerms()">Download APK Release</button>
+    </div>
+
+    <div id="page-community" class="page container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="color: var(--green)">Comunidade</h2>
+            <button onclick="showNewPost()" style="width: 40px; height: 40px; border-radius: 50%; padding: 0;">+</button>
+        </div>
+        <div id="posts-list"></div>
+    </div>
+
+    <div id="page-new-post" class="page container hidden">
+        <button onclick="showPage('community')" class="danger" style="width: auto; margin-bottom: 10px;">Voltar</button>
+        <input type="text" id="post-title" placeholder="Título (Negrito)">
+        <div style="margin: 10px 0;">
+            <label>Categoria: </label>
+            <select id="post-cat" style="background: #222; color: white; padding: 5px;">
+                <option value="🟢">🟢</option>
+                <option value="🟡">🟡</option>
+                <option value="🟤">🟤</option>
+            </select>
+        </div>
+        <div class="toolbar">
+            <button onclick="execCmd('bold')"><b>B</b></button>
+            <button onclick="execCmd('italic')"><i>I</i></button>
+            <button onclick="execCmd('underline')"><u>U</u></button>
+        </div>
+        <div id="editor" contenteditable="true"></div>
+        <button onclick="submitPost()">Postar</button>
+    </div>
+
+    <div id="page-post-detail" class="page container hidden">
+        <button onclick="showPage('community')" style="width: auto; background: #444; margin-bottom: 10px;">Voltar</button>
+        <div id="full-post-content"></div>
+        <hr style="border-color: #333;">
+        <h3>Comentários</h3>
+        <div id="comments-list"></div>
+        <div style="position: relative; margin-top: 15px;">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="comment-text" placeholder="Escreva algo...">
+                <button onclick="toggleEmoji()" style="width: auto; background: #333;">😊</button>
+                <button onclick="sendComment()" style="width: auto;">Enviar</button>
+            </div>
+            <div id="emoji-box" class="emoji-picker hidden"></div>
+        </div>
+    </div>
+
+    <div id="page-support" class="page container hidden">
+        <h2 style="color: var(--red)">Suporte</h2>
+        <input type="text" id="sup-subject" placeholder="Assunto">
+        <textarea id="sup-msg" rows="5" style="width: 100%; background: #222; color: white; border: 1px solid var(--border); padding: 10px;" placeholder="Mensagem"></textarea>
+        <button onclick="alert('Suporte enviado! Responderemos em breve.')">Enviar Solicitação</button>
+    </div>
+</div>
+
+<div id="modal-terms" class="modal hidden">
+    <div class="modal-content">
+        <h3>Termos e Condições</h3>
+        <div style="height: 150px; overflow-y: auto; font-size: 0.9rem; margin-bottom: 15px;">
+            Ao baixar o LightsBlocker, você concorda com o uso de filtros de sobreposição de tela conforme as permissões do Android...
+        </div>
+        <button onclick="startDownload()">Li e concordo</button>
+        <button class="danger" onclick="hideTerms()" style="margin-top: 5px;">Cancelar</button>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyO6B-fEBx53eS8neBwRDLC1l-iEJitClAXP9WnhcNEMHBkiYx4IMCF9M1JT27FooWjDw/exec"; // <--- COLOQUE SUA URL AQUI
+    let currentUser = localStorage.getItem('user');
+    let activePost = null;
+
+    function run(func, data, cb) {
+        google.script.run.withSuccessHandler(cb)[func](data);
+    }
+
+    function toggleAuth(showSignup) {
+        document.getElementById('login-view').classList.toggle('hidden', showSignup);
+        document.getElementById('signup-view').classList.toggle('hidden', !showSignup);
+    }
+
+    function doSignup() {
+        const data = {
+            user: document.getElementById('s-user').value,
+            email: document.getElementById('s-email').value,
+            telefone: document.getElementById('s-tel').value,
+            senha: document.getElementById('s-pass').value,
+            senha2: document.getElementById('s-pass2').value
+        };
+        if(data.senha !== data.senha2) return alert("Senhas não conferem!");
+        run('userAction', 'signup', data, (res) => {
+            if(res.success) { alert("Sucesso!"); toggleAuth(false); }
+            else alert(res.msg);
+        });
+    }
+
+    function doLogin() {
+        const data = {
+            user: document.getElementById('l-user').value,
+            senha: document.getElementById('l-pass').value
+        };
+        run('userAction', 'login', data, (res) => {
+            if(res.success) {
+                currentUser = res.user;
+                localStorage.setItem('user', res.user);
+                initApp();
+            } else alert(res.msg);
+        });
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('page-' + id).classList.remove('hidden');
+        if(id === 'community') loadPosts();
+    }
+
+    function loadPosts() {
+        run('getPosts', null, (posts) => {
+            const list = document.getElementById('posts-list');
+            list.innerHTML = posts.map(p => `
+                <div class="post-card" onclick='openPost(${JSON.stringify(p)})'>
+                    <div class="post-header">
+                        <span>${p.categoria} @${p.user}</span>
+                        <span>${p.data} ${p.hora}</span>
+                    </div>
+                    <b style="font-size: 1.1rem;">${p.titulo}</b>
+                    <div class="reaction-bar">
+                        <span>👍 ${p.upvotes}</span> <span>❤️ ${p.hearts}</span>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    function openPost(p) {
+        activePost = p;
+        showPage('post-detail');
+        document.getElementById('full-post-content').innerHTML = `
+            <div class="post-header"><span>${p.categoria} @${p.user}</span> <span>${p.data} ${p.hora}</span></div>
+            <h2 style="color: var(--green); margin: 5px 0;">${p.titulo}</h2>
+            <div style="margin: 20px 0; line-height: 1.6;">${p.texto}</div>
+            <div class="reaction-bar">
+                <button class="react-btn" onclick="react(${p.row}, 7)">🔼 Upvote (${p.upvotes})</button>
+                <button class="react-btn" onclick="react(${p.row}, 8)">🔽 Down (${p.downvotes})</button>
+                <button class="react-btn" onclick="react(${p.row}, 9)">❤️ (${p.hearts})</button>
+                <button class="react-btn" onclick="react(${p.row}, 10)">😢 (${p.sads})</button>
+                <button class="react-btn" onclick="react(${p.row}, 11)">😲 (${p.wows})</button>
+                <button class="react-btn" onclick="react(${p.row}, 12)">🩹 (${p.strength})</button>
+            </div>
+        `;
+        loadComments(p.titulo);
+    }
+
+    function react(row, col) {
+        run('addReaction', row, col, () => openPost(activePost)); // Recarrega
+    }
+
+    function loadComments(title) {
+        run('getPostDetails', title, (res) => {
+            document.getElementById('comments-list').innerHTML = res.comments.map(c => `
+                <div style="font-size: 0.9rem; margin-top: 10px; border-left: 2px solid var(--green); padding-left: 10px;">
+                    <b style="color: var(--yellow)">${c.user}:</b> ${c.comment}
+                </div>
+            `).join('');
+            
+            document.getElementById('emoji-box').innerHTML = res.emojiList.map(e => `
+                <span class="emoji-item" onclick="addEmoji('${e.trim()}')">${e}</span>
+            `).join('');
+        });
+    }
+
+    function addEmoji(e) {
+        document.getElementById('comment-text').value += e;
+        toggleEmoji();
+    }
+
+    function sendComment() {
+        const txt = document.getElementById('comment-text').value;
+        if(!txt) return;
+        run('postComment', {user: currentUser, comment: txt, post: activePost.titulo}, () => {
+            document.getElementById('comment-text').value = "";
+            loadComments(activePost.titulo);
+        });
+    }
+
+    function execCmd(cmd) { document.execCommand(cmd, false, null); }
+
+    function showNewPost() {
+        showPage('new-post');
+        document.getElementById('editor').innerHTML = "";
+    }
+
+    function submitPost() {
+        const data = {
+            user: currentUser,
+            titulo: document.getElementById('post-title').value,
+            categoria: document.getElementById('post-cat').value,
+            texto: document.getElementById('editor').innerHTML
+        };
+        run('createPost', data, () => showPage('community'));
+    }
+
+    function showTerms() { document.getElementById('modal-terms').classList.remove('hidden'); }
+    function hideTerms() { document.getElementById('modal-terms').classList.add('hidden'); }
+    function startDownload() {
+        window.location.href = "app-release.apk"; // Deve estar na raiz do seu repo
+        hideTerms();
+    }
+
+    function toggleEmoji() { document.getElementById('emoji-box').classList.toggle('hidden'); }
+
+    function logout() { localStorage.clear(); location.reload(); }
+
+    function initApp() {
+        if(currentUser) {
+            document.getElementById('auth-page').classList.add('hidden');
+            document.getElementById('navbar').classList.remove('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            showPage('download');
+        }
+    }
+
+    window.onload = initApp;
+</script>
+</body>
+</html>
