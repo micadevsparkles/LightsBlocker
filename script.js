@@ -1,5 +1,5 @@
 // ATENÇÃO: Substitua a URL abaixo pela URL fornecida pelo Google Apps Script (Implantar > Nova Implantação)
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyO6B-fEBx53eS8neBwRDLC1l-iEJitClAXP9WnhcNEMHBkiYx4IMCF9M1JT27FooWjDw/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtKzTyC7OSWDSEnMD-ft6M1ztlxNtmZ1TsaKFDSQmZX0M2TVnT7Ve5feh7AvAkCdGLXg/exec"; 
 
 let currentUser = localStorage.getItem('user');
 let activePost = null;
