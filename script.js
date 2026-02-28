@@ -4,15 +4,22 @@ let currentUser = localStorage.getItem('user');
 let activePost = null;
 
 // Nova função de comunicação via FETCH para funcionar no GitHub Pages
+// Funções auxiliares de loading
+function showLoading() { document.getElementById('loading-overlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
+
 async function run(func, data, cb) {
+    showLoading(); // Inicia a animação giratória
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ func: func, data: data, col: data.col || null })
         });
         const result = await response.json();
+        hideLoading(); // Para a animação
         cb(result);
     } catch (err) {
+        hideLoading();
         console.error("Erro na chamada:", err);
         alert("Erro de conexão com o servidor.");
     }
@@ -60,13 +67,19 @@ function showPage(id) {
 
 function loadPosts() {
     const list = document.getElementById('posts-list');
-    list.innerHTML = "<p style='padding:20px'>Carregando...</p>";
+    list.innerHTML = ""; // Limpa a lista pra não duplicar antes do loading
     run('getPosts', {}, (posts) => {
+        if(!posts || posts.length === 0) {
+            list.innerHTML = "<p style='text-align:center; color:#666;'>Nenhum post recente.</p>";
+            return;
+        }
         list.innerHTML = posts.map(p => `
-            <div class="post-card" onclick='openPost(${JSON.stringify(p)})'>
-                <div class="post-header"><span>${p.categoria} @${p.user}</span><span>${p.data}</span></div>
+            <div class="post-card" onclick='openPost(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                <div class="post-header"><span>${p.categoria} @${p.user}</span><span>${timeAgo(p.data, p.hora)}</span></div>
                 <b style="font-size: 1.1rem; color: var(--green);">${p.titulo}</b>
-                <div class="reaction-bar"><span>👍 ${p.upvotes}</span><span>❤️ ${p.hearts}</span></div>
+                <div class="reaction-bar" style="margin-top:10px; pointer-events:none;">
+                    <span style="font-size:0.9rem; color:#aaa;">👍 ${p.upvotes} &nbsp; ❤️ ${p.hearts}</span>
+                </div>
             </div>
         `).join('');
     });
@@ -76,19 +89,39 @@ function openPost(p) {
     activePost = p;
     showPage('post-detail');
     document.getElementById('full-post-content').innerHTML = `
-        <div class="post-header"><span>${p.categoria} @${p.user}</span><span>${p.data} às ${p.hora}</span></div>
+        <div class="post-header"><span>${p.categoria} @${p.user}</span><span>${timeAgo(p.data, p.hora)}</span></div>
         <h2 style="color: var(--green); margin: 5px 0;">${p.titulo}</h2>
         <div style="margin: 20px 0; line-height: 1.6;">${p.texto}</div>
         <div class="reaction-bar">
-            <button class="react-btn" onclick="react(${p.row}, 7)">🔼 Upvote (${p.upvotes})</button>
-            <button class="react-btn" onclick="react(${p.row}, 8)">🔽 Down (${p.downvotes})</button>
-            <button class="react-btn" onclick="react(${p.row}, 9)">❤️ (${p.hearts})</button>
-            <button class="react-btn" onclick="react(${p.row}, 10)">😢 (${p.sads})</button>
-            <button class="react-btn" onclick="react(${p.row}, 11)">😲 (${p.wows})</button>
-            <button class="react-btn" onclick="react(${p.row}, 12)">🩹 (${p.strength})</button>
+            <button class="react-btn" onclick="react(${p.row}, 7)" title="Upvotes: ${p.upvotes}">🔼</button>
+            <button class="react-btn" onclick="react(${p.row}, 8)" title="Downvotes: ${p.downvotes}">🔽</button>
+            <button class="react-btn" onclick="react(${p.row}, 9)" title="Corações: ${p.hearts}">❤️</button>
+            <button class="react-btn" onclick="react(${p.row}, 10)" title="Triste: ${p.sads}">😢</button>
+            <button class="react-btn" onclick="react(${p.row}, 11)" title="Uau: ${p.wows}">😲</button>
+            <button class="react-btn" onclick="react(${p.row}, 12)" title="Força: ${p.strength}">🩹</button>
         </div>
     `;
     loadComments(p.titulo);
+}
+function timeAgo(dateStr, timeStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split('/');
+    const timeParts = timeStr ? timeStr.split(':') : [0,0];
+    
+    // Converte a string "dd/MM/yyyy HH:mm" da planilha para o formato Date do JS
+    const postDate = new Date(parts[2], parts[1] - 1, parts[0], timeParts[0], timeParts[1]);
+    const now = new Date();
+    
+    const diffMs = now - postDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 1) return "Agora mesmo";
+    if (diffMins < 60) return `Há ${diffMins} min`;
+    if (diffHours < 24) return `Há ${diffHours} h`;
+    if (diffDays === 1) return `Há 1 dia`;
+    return `Há ${diffDays} dias`;
 }
 
 function react(row, col) {
@@ -140,7 +173,8 @@ function initApp() {
         document.getElementById('auth-page').classList.add('hidden');
         document.getElementById('navbar').classList.remove('hidden');
         document.getElementById('main-content').classList.remove('hidden');
-        showPage('download');
+        // Alterado de 'download' para 'community'
+        showPage('community'); 
     } else {
         document.getElementById('auth-page').classList.remove('hidden');
     }
